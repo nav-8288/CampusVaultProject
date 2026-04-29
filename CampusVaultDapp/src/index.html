@@ -1,0 +1,213 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>CampusVault DApp</title>
+
+    <!-- Bootstrap 4 CSS -->
+    <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0/css/bootstrap.min.css"
+          integrity="sha384-Gn5384xqQ1aoWXA+058RXPxPg6fy4IWvTNh0E263XmFcJlSAwiGgFAW/dAiS6JXm" crossorigin="anonymous">
+    
+    <!-- Toastr CSS -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/toastr.js/latest/toastr.min.css">
+
+    <style>
+        .panel-proposal {
+            border: 2px solid #dee2e6;
+            border-radius: 8px;
+            margin-bottom: 20px;
+            transition: all 0.3s ease;
+        }
+        
+        .panel-proposal:hover {
+            border-color: #007bff;
+            box-shadow: 0 4px 8px rgba(0,123,255,0.2);
+        }
+        
+        .proposal-image {
+            width: 100%;
+            height: 250px;
+            object-fit: cover;
+            border-radius: 8px;
+        }
+        
+        .vote-count {
+            font-size: 1.2em;
+            color: #28a745;
+            font-weight: bold;
+            word-break: break-all;
+        }
+        
+    </style>
+</head>
+
+<body>
+    <div class="container">
+        <!-- Header -->
+        <div class="row">
+            <div class="col-12">
+                <h1 class="text-center mb-4 mt-4">CampusVault DApp</h1>
+                <hr/>
+            </div>
+        </div>
+
+        <!-- Vault Info Row -->
+        <div class="row" id="proposalsRow">
+            <!-- Account Info -->
+            <div class="col-lg-3 col-md-6 col-sm-12">
+                <div class="card panel-proposal">
+                    <div class="card-header text-center">
+                        <h4 class="card-title mb-0">Account</h4>
+                    </div>
+                    <div class="card-body text-center">
+                        <p>Connected Account:</p>
+                        <p class="vote-count"><span id="account">Not connected</span></p>
+                        <button class="btn btn-info" id="refresh-balances">Refresh Balances</button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- User CVLT Balance -->
+            <div class="col-lg-3 col-md-6 col-sm-12">
+                <div class="card panel-proposal">
+                    <div class="card-header text-center">
+                        <h4 class="card-title mb-0">CVLT Balance</h4>
+                    </div>
+                    <div class="card-body text-center">
+                        <p>User Token Balance:</p>
+                        <p class="vote-count"><span id="token-balance">0</span> CVLT</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Vault Shares -->
+            <div class="col-lg-3 col-md-6 col-sm-12">
+                <div class="card panel-proposal">
+                    <div class="card-header text-center">
+                        <h4 class="card-title mb-0">Vault Shares</h4>
+                    </div>
+                    <div class="card-body text-center">
+                        <p>User Vault Shares:</p>
+                        <p class="vote-count"><span id="vault-balance">0</span></p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Membership -->
+            <div class="col-lg-3 col-md-6 col-sm-12">
+                <div class="card panel-proposal">
+                    <div class="card-header text-center">
+                        <h4 class="card-title mb-0">Membership</h4>
+                    </div>
+                    <div class="card-body text-center">
+                        <p>Membership Token ID:</p>
+                        <p class="vote-count"><span id="membership-id">0</span></p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Transfer CVLT and Admin Balance -->
+        <div class="row mt-4">
+          <div class="col-12">
+              <div class="card">
+                  <div class="card-body">
+                      <!-- Transfer Section -->
+                      <div class="row mb-3">
+                          <div class="col-md-5">
+                              <input type="text" id="transfer-address" class="form-control" 
+                                    placeholder="Enter user address (0x...)">
+                          </div>
+                          <div class="col-md-4">
+                              <input type="text" id="transfer-amount" class="form-control" 
+                                    placeholder="Amount of CVLT">
+                          </div>
+                          <div class="col-md-3 d-flex align-items-end">
+                              <button class="btn btn-info btn-block" id="transfer-btn">Transfer CVLT</button>
+                          </div>
+                      </div>
+
+                      <div class="row mb-3">
+                          <div class="col-md-12">
+                              <div class="alert alert-info">
+                                  <strong>Admin CVLT Balance:</strong> <span id="admin-balance">0</span> CVLT
+                              </div>
+                          </div>
+                      </div>
+                  </div>
+              </div>
+
+              <div class="mt-4"></div>
+
+              <!-- Vault Action Section -->
+              <div class="card">
+                <div class="card-body">
+                  <div class="row mb-3">
+                      <div class="col-md-8">
+                          <input type="text" id="approve-amount" class="form-control" 
+                                placeholder="Amount to approve">
+                      </div>
+                      <div class="col-md-4">
+                          <button class="btn btn-primary btn-block" id="approve-btn">Approve Vault</button>
+                      </div>
+                  </div>
+
+                  <div class="row mb-3">
+                      <div class="col-md-8">
+                          <input type="text" id="deposit-amount" class="form-control" 
+                                placeholder="Amount to deposit">
+                      </div>
+                      <div class="col-md-4">
+                          <button class="btn btn-success btn-block" id="deposit-btn">Deposit</button>
+                      </div>
+                  </div>
+
+                  <div class="row mb-3">
+                      <div class="col-md-8">
+                          <input type="text" id="withdraw-shares" class="form-control" 
+                                placeholder="Shares to withdraw">
+                      </div>
+                      <div class="col-md-4">
+                          <button class="btn btn-danger btn-block" id="withdraw-btn">Withdraw</button>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+          </div>
+        </div>
+
+
+
+    <!-- jQuery -->
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/1.12.4/jquery.min.js"></script>
+    
+    <!-- Bootstrap JS -->
+    <script src="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0/js/bootstrap.min.js"></script>
+    
+    <!-- Toastr JS -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/toastr.js/latest/toastr.min.js"></script>
+    
+    <!-- Ethers.js -->
+    <script src="https://cdn.jsdelivr.net/npm/ethers@5.2.0/dist/ethers.umd.min.js"></script>
+    
+    <!-- app.js -->
+    <script src="app.js"></script>
+
+    <div id="overlay" style="
+        position: fixed;
+        top: 0; left: 0; right: 0; bottom: 0;
+        background: rgba(128, 128, 128, 0.97); /* semi-transparent grey */
+        z-index: 9999;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        font-size: 1.5rem;
+        color: white;
+        user-select: none;
+        ">
+        Please connect your MetaMask wallet...
+    </div>
+</body>
+</html>
