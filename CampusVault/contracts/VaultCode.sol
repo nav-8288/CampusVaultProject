@@ -96,6 +96,28 @@ contract Vault {
         token.transferFrom(msg.sender, address(this), _amount);
     }
 
+/*function to appreciate vault value based on users investment */
+    function appreciateVaultValue(uint256 _amount) external{
+
+        if(msg.sender != admin){ /*only the admin should be able to apply appreciation to vault */
+            revert("error: only the admin can appreciate vault value");
+        }
+
+            /*the appreciation value has to be greater than 0 to be applied by admin  */
+        if(_amount == 0){
+            revert("error: appreciation amount has to be > 0");
+        }
+
+        /* admin transers extra CVLT into the vault to appreciate vaults value  */
+        bool successful_transfer = token.transferFrom(msg.sender, address(this), _amount);
+
+        /*if the transfer doesn't go through as expected */
+        if(!successful_transfer){
+            revert("error: vault appreciation transfer failed");
+        }
+
+    }
+
     function withdraw(uint256 _shares) external {
         /*
         a = amount

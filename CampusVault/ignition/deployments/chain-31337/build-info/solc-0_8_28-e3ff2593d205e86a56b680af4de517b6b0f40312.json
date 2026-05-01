@@ -1,0 +1,39 @@
+{
+  "_format": "hh3-sol-build-info-1",
+  "id": "solc-0_8_28-e3ff2593d205e86a56b680af4de517b6b0f40312",
+  "solcVersion": "0.8.28",
+  "solcLongVersion": "0.8.28+commit.7893614a",
+  "userSourceNameMap": {
+    "contracts/VaultCode.sol": "project/contracts/VaultCode.sol"
+  },
+  "input": {
+    "language": "Solidity",
+    "settings": {
+      "evmVersion": "cancun",
+      "optimizer": {
+        "enabled": true,
+        "runs": 200
+      },
+      "outputSelection": {
+        "*": {
+          "": [
+            "ast"
+          ],
+          "*": [
+            "abi",
+            "evm.bytecode",
+            "evm.deployedBytecode",
+            "evm.methodIdentifiers",
+            "metadata"
+          ]
+        }
+      },
+      "remappings": []
+    },
+    "sources": {
+      "project/contracts/VaultCode.sol": {
+        "content": "// SPDX-License-Identifier: MIT\npragma solidity ^0.8.26;\n\ncontract Vault {\n    IERC20 public immutable token;\n    \n\n    uint256 public totalSupply;\n    mapping(address => uint256) public balanceOf;\n\n    address public admin; //administrator\n    uint256 public feePercent;\n\n    // Governance Membership data structures\n\n    uint256 private _membershipTokenId;\n    mapping(uint256 => address) public _ownerOfmembershipToken;\n    mapping(address => uint256) public _balanceOfmembershipToken;\n    mapping(address => uint256) public _membershipTokenOf;\n\n\n    function _mintMembership(address to) internal {\n        //mint membership token if not already owned \n\n        /*if the membership token is already given to user, do NOT MINT AGAIN */\n        /*each user should only get one NFT membership, even if they deposit multiple times */\n        if(_membershipTokenOf[to] != 0){\n            return;\n        }\n\n        _membershipTokenId++;   /*increment the membership token ID so each membership has unique ID */\n\n        /*keep track of which membership belongs to which specific user */\n        _ownerOfmembershipToken[_membershipTokenId] = to;\n\n        /*log this user owning a membership token  */\n        _balanceOfmembershipToken[to] = 1;\n\n        /*connect the user address to their actual membership */\n        _membershipTokenOf[to] = _membershipTokenId; \n    }\n\n\n    constructor(address _token) {\n        token = IERC20(_token);\n\n        admin = msg.sender; /*whoever deploys the vault becomes the administrator */\n\n        feePercent = 2; /*fee will be charged in the depositing token; fee will also be transferred to admin */\n        \n\n    }\n\n    function _mint(address _to, uint256 _shares) private {\n        totalSupply += _shares;\n        balanceOf[_to] += _shares;\n\n        //also minting a membership\n        _mintMembership(_to);\n    \n    }\n\n    function _burn(address _from, uint256 _shares) private {\n        totalSupply -= _shares;\n        balanceOf[_from] -= _shares;\n    }\n\n    function deposit(uint256 _amount) external {\n        /*\n        a = amount (collateral)\n        B = balance of token before deposit (total assets)\n        T = total supply (total supply of vault tokens)\n        s = shares to mint (new token to mint)\n\n        (T + s) / T = (a + B) / B \n\n        s = aT / B\n        */\n\n        /*if the user is trying to deposit 0 tokens, revert it */\n        if(_amount == 0){\n            revert(\"error: cannot deposit 0 tokens, must be valid num starting @ 1\");\n\n        }\n\n\n\n        uint256 shares;\n        if (totalSupply == 0) {\n            shares = _amount;\n        } else {\n            shares = (_amount * totalSupply) / token.balanceOf(address(this));\n        }\n\n        _mint(msg.sender, shares);\n        token.transferFrom(msg.sender, address(this), _amount);\n    }\n\n/*function to appreciate vault value based on users investment */\n    function appreciateVaultValue(uint256 _amount) external{\n\n        if(msg.sender != admin){ /*only the admin should be able to apply appreciation to vault */\n            revert(\"error: only the admin can appreciate vault value\");\n        }\n\n            /*the appreciation value has to be greater than 0 to be applied by admin  */\n        if(_amount == 0){\n            revert(\"error: appreciation amount has to be > 0\");\n        }\n\n        /* admin transers extra CVLT into the vault to appreciate vaults value  */\n        bool successful_transfer = token.transferFrom(msg.sender, address(this), _amount);\n\n        /*if the transfer doesn't go through as expected */\n        if(!successful_transfer){\n            revert(\"error: vault appreciation transfer failed\");\n        }\n\n    }\n\n    function withdraw(uint256 _shares) external {\n        /*\n        a = amount\n        B = balance of token before withdraw\n        T = total supply\n        s = shares to burn\n\n        (T - s) / T = (B - a) / B \n\n        a = sB / T\n        */\n\n        /* user should not be allowed to withdraw 0 shares */\n        if(_shares == 0){\n            revert(\"error: cannot withdraw 0 shares\");\n        }\n\n        /*ensure the user isn't trying to withdraw more shares than they have  */\n        if(_shares > balanceOf[msg.sender]){\n            revert(\"error: insufficient funds for this withdrawal\");\n\n        }\n\n\n        uint256 grossAmount =\n            (_shares * token.balanceOf(address(this))) / totalSupply;\n        _burn(msg.sender, _shares);\n\n        // Take a fee for using the vault\n        uint256 fee = (grossAmount * feePercent) / 100;\n\n        uint256 amount = grossAmount - fee; /* If the user were to withdraw 100 CVLT and the fee is 2%, then \n        the user will receive 98 CVLT while the admin will receive 2 CVLT */\n        \n        token.transfer(msg.sender, amount);\n        token.transfer(admin, fee);\n\n        // you can implement revoking of governance membership here\n\n        /*if the user has fully withdrawn their investment */\n        if(balanceOf[msg.sender] == 0){\n\n            /*get the token ID of the users membership */\n            uint256 tok_ID = _membershipTokenOf[msg.sender];\n\n            /*remove the record for this membership tok */\n            delete _ownerOfmembershipToken[tok_ID];\n            _balanceOfmembershipToken[msg.sender] = 0; /*the user's membership balance should be 0 */\n\n            delete _membershipTokenOf[msg.sender]; /*remove the record connecting this user to a membership tok */\n\n        }\n\n\n    }\n    \n}\n\ninterface IERC20 {\n    function totalSupply() external view returns (uint256);\n\n    function balanceOf(address account) external view returns (uint256);\n\n    function transfer(address recipient, uint256 amount)\n        external\n        returns (bool);\n\n    function allowance(address owner, address spender)\n        external\n        view\n        returns (uint256);\n\n    function approve(address spender, uint256 amount) external returns (bool);\n\n    function transferFrom(address sender, address recipient, uint256 amount)\n        external\n        returns (bool);\n\n    event Transfer(address indexed from, address indexed to, uint256 amount);\n    event Approval(\n        address indexed owner, address indexed spender, uint256 amount\n    );\n\n\n \n\n\n}"
+      }
+    }
+  }
+}
