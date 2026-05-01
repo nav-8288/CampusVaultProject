@@ -13,10 +13,10 @@ contract Vault {
     uint256 public totalSupply;
     mapping(address => uint256) public balanceOf;
 
-    address public admin; //administrator
+    address public admin; /*administrator*/
     uint256 public feePercent;
 
-    // Governance Membership data structures
+    /* Governance Membership data structures */
 
     uint256 private _membershipTokenId;
     mapping(uint256 => address) public _ownerOfmembershipToken;
@@ -25,7 +25,7 @@ contract Vault {
 
 
     function _mintMembership(address to) internal {
-        //mint membership token if not already owned 
+        /*mint membership token if not already owned */
 
         /*if the membership token is already given to user, do NOT MINT AGAIN */
         /*each user should only get one NFT membership, even if they deposit multiple times */
@@ -68,7 +68,7 @@ contract Vault {
         totalSupply += _shares;
         balanceOf[_to] += _shares;
 
-        //also minting a membership
+        /*also minting a membership*/
         _mintMembership(_to);
     
     }
@@ -159,7 +159,7 @@ contract Vault {
             (_shares * token.balanceOf(address(this))) / totalSupply;
         _burn(msg.sender, _shares);
 
-        // Take a fee for using the vault
+        /* Take a fee for using the vault */
         uint256 fee = (grossAmount * feePercent) / 100;
 
         uint256 amount = grossAmount - fee; /* If the user were to withdraw 100 CVLT and the fee is 2%, then 
@@ -168,7 +168,7 @@ contract Vault {
         token.transfer(msg.sender, amount);
         token.transfer(admin, fee);
 
-        // you can implement revoking of governance membership here
+        /* you can implement revoking of governance membership here */
 
 
         /*if the user has fully withdrawn their investment */
@@ -227,7 +227,7 @@ interface IERC20 {
 /*interface used so vault can call the CVM NFT contract */
 interface CampusVaultNFT{
 
-    /*mint CVM NFT to user when the deposit into the vault */
+    /*mint CVM NFT to user when they deposit into the vault */
     function mint(address recipient, string calldata metadataURI) external returns (uint256);
 
     
