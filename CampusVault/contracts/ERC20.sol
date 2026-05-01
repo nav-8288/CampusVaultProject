@@ -12,6 +12,7 @@ contract MyToken is ERC20, Ownable {
     ) ERC20(name_, symbol_) Ownable(msg.sender) {
         _mint(msg.sender, initialSupplyWholeTokens * 10 ** decimals());
     }
+    
 
     // Task 2: only admin (owner) can mint
     function mint(address to, uint256 amountWholeTokens) external onlyOwner {

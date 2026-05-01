@@ -3,6 +3,11 @@ pragma solidity ^0.8.26;
 
 contract Vault {
     IERC20 public immutable token;
+
+    /*connect this vault to the CVM NFT contract */
+    CampusVaultNFT public membershipNFT; 
+
+    string public membershipURI;
     
 
     uint256 public totalSupply;
@@ -28,21 +33,29 @@ contract Vault {
             return;
         }
 
-        _membershipTokenId++;   /*increment the membership token ID so each membership has unique ID */
+        /*mint the actual CVM NFT to the user so it can show up in metamask */
+        uint256 tok_ID = membershipNFT.mint(to, membershipURI);
+
 
         /*keep track of which membership belongs to which specific user */
-        _ownerOfmembershipToken[_membershipTokenId] = to;
+        _ownerOfmembershipToken[tok_ID] = to;
 
         /*log this user owning a membership token  */
         _balanceOfmembershipToken[to] = 1;
 
         /*connect the user address to their actual membership */
-        _membershipTokenOf[to] = _membershipTokenId; 
+        _membershipTokenOf[to] = tok_ID; 
     }
 
 
-    constructor(address _token) {
+    constructor(address _token, address _membershipNFT, string memory _membershipURI) {
         token = IERC20(_token);
+
+        /*connect the vault to the real CVM NFT contract  */
+        membershipNFT = CampusVaultNFT(_membershipNFT);
+
+        /*metadata URI used when minting the membershipNFT */
+        membershipURI = _membershipURI; 
 
         admin = msg.sender; /*whoever deploys the vault becomes the administrator */
 
@@ -157,14 +170,20 @@ contract Vault {
 
         // you can implement revoking of governance membership here
 
+
         /*if the user has fully withdrawn their investment */
         if(balanceOf[msg.sender] == 0){
 
             /*get the token ID of the users membership */
             uint256 tok_ID = _membershipTokenOf[msg.sender];
 
+            membershipNFT.revoke_NFT(tok_ID); /*revoke the actual CVM NFT since the user fully withdrrew */
+
+
             /*remove the record for this membership tok */
             delete _ownerOfmembershipToken[tok_ID];
+
+
             _balanceOfmembershipToken[msg.sender] = 0; /*the user's membership balance should be 0 */
 
             delete _membershipTokenOf[msg.sender]; /*remove the record connecting this user to a membership tok */
@@ -175,6 +194,8 @@ contract Vault {
     }
     
 }
+
+
 
 interface IERC20 {
     function totalSupply() external view returns (uint256);
@@ -201,8 +222,14 @@ interface IERC20 {
         address indexed owner, address indexed spender, uint256 amount
     );
 
+}
 
- 
+/*interface used so vault can call the CVM NFT contract */
+interface CampusVaultNFT{
 
+    /*mint CVM NFT to user when the deposit into the vault */
+    function mint(address recipient, string calldata metadataURI) external returns (uint256);
 
+    
+    function revoke_NFT(uint256 tokenId) external; /*revoke the NFT when the user fully withdraws all funds */
 }

@@ -18,6 +18,8 @@ mapping(uint256 => string) private _tokenURI; //stores the metadata URI for each
         ERC721("CampusVault Membership", "CVM")
         Ownable(msg.sender){
 
+            _tokenCounter = 1; /*start the counter at 1 since 0 means no membership in the vault */
+
         }
     
 
@@ -43,6 +45,18 @@ mapping(uint256 => string) private _tokenURI; //stores the metadata URI for each
         emit NFTMinted(recipient, tokenId, metadataURI); 
         return tokenId;
     }
+
+
+    /*function declared so ONLY THE OWNER can revoke the CampusVault NFT (CVM) */
+    function revoke_NFT(uint256 tokenId) external onlyOwner{
+
+        _burn(tokenId); /*burn the NFT so the membership gets revoked */
+
+        /*clear the metadataURI for that specific token */
+        delete _tokenURI[tokenId]; 
+    }
+
+    
 
 
    
